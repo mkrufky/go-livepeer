@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -50,6 +51,28 @@ func (lt *LocalTranscoder) Transcode(fname string, profiles []ffmpeg.VideoProfil
 
 func NewLocalTranscoder(workDir string) Transcoder {
 	return &LocalTranscoder{workDir: workDir}
+}
+
+type FakeTranscoder struct {
+}
+
+func (ft *FakeTranscoder) Transcode(fname string, profiles []ffmpeg.VideoProfile) ([][]byte, error) {
+	dat, err := ioutil.ReadFile(fname)
+	if err != nil {
+		return nil, err
+	}
+	// wait randomly
+	delay := rand.Intn(1000)
+	time.Sleep(time.Duration(1000+delay) * time.Millisecond)
+	res := make([][]byte, len(profiles), len(profiles))
+	for i := range profiles {
+		res[i] = dat
+	}
+	return res, nil
+}
+
+func NewFakeTranscoder() Transcoder {
+	return &FakeTranscoder{}
 }
 
 type NvidiaTranscoder struct {
