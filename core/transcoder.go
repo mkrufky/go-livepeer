@@ -1,9 +1,11 @@
 package core
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -25,6 +27,51 @@ type Transcoder interface {
 
 type LocalTranscoder struct {
 	workDir string
+}
+
+type FakeStandaloneTranscoder struct {
+}
+
+func NewFakeStandaloneTranscoder() Transcoder {
+	return &FakeStandaloneTranscoder{}
+}
+
+func (lt *FakeStandaloneTranscoder) Transcode(fname string, profiles []ffmpeg.VideoProfile) ([][]byte, error) {
+	_, seqNo, parseErr := parseURI(fname)
+	glog.Infof("Downloading segment seqNo=%d url=%s", seqNo, fname)
+	httpc := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}
+	resp, err := httpc.Get(fname)
+
+	if err != nil {
+		glog.Errorf("Error downloading %s: %v", fname, err)
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		glog.Errorf("Error downloading reading body %s: %v", fname, err)
+		return nil, err
+	}
+
+	// wait randomly
+	start := time.Now()
+	delay := rand.Intn(1000)
+	time.Sleep(time.Duration(1000+delay) * time.Millisecond)
+	res := make([][]byte, len(profiles), len(profiles))
+	for i := range profiles {
+		res[i] = data
+	}
+
+	if monitor.Enabled && parseErr == nil {
+		// This will run only when fname is actual URL and contains seqNo in it.
+		// When orchestrator works as transcoder, `fname` will be relative path to file in local
+		// filesystem and will not contain seqNo in it. For that case `SegmentTranscoded` will
+		// be called in orchestrator.go
+		monitor.SegmentTranscoded(0, seqNo, time.Since(start), common.ProfilesNames(profiles))
+	}
+
+	return res, nil
 }
 
 func (lt *LocalTranscoder) Transcode(fname string, profiles []ffmpeg.VideoProfile) ([][]byte, error) {

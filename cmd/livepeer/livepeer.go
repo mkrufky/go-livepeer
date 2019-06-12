@@ -214,6 +214,10 @@ func main() {
 	if *transcoder {
 		if *nvidia != "" {
 			n.Transcoder = core.NewNvidiaTranscoder(*nvidia, *datadir)
+		} else if *fake && *orchestrator {
+			n.Transcoder = core.NewFakeTranscoder()
+		} else if *fake && !*orchestrator {
+			n.Transcoder = core.NewFakeStandaloneTranscoder()
 		} else {
 			n.Transcoder = core.NewLocalTranscoder(*datadir)
 		}
@@ -224,8 +228,6 @@ func main() {
 		if !*transcoder {
 			n.TranscoderManager = core.NewRemoteTranscoderManager()
 			n.Transcoder = n.TranscoderManager
-		} else if *fake {
-			n.Transcoder = core.NewFakeTranscoder()
 		}
 	} else if *transcoder {
 		n.NodeType = core.TranscoderNode
