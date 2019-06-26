@@ -109,8 +109,8 @@ func (ft *FakeTranscoder) Transcode(fname string, profiles []ffmpeg.VideoProfile
 		return nil, err
 	}
 	// wait randomly
-	delay := rand.Intn(1000)
-	time.Sleep(time.Duration(1000+delay) * time.Millisecond)
+	// delay := rand.Intn(1000)
+	// time.Sleep(time.Duration(1000+delay) * time.Millisecond)
 	res := make([][]byte, len(profiles), len(profiles))
 	for i := range profiles {
 		res[i] = dat

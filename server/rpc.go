@@ -61,6 +61,21 @@ type BroadcastSession struct {
 	BroadcasterOS    drivers.OSSession
 	Sender           pm.Sender
 	PMSessionID      string
+	tempSession      bool
+}
+
+func (bs *BroadcastSession) makeTempSession() *BroadcastSession {
+	return &BroadcastSession{
+		Broadcaster:      bs.Broadcaster,
+		ManifestID:       bs.ManifestID,
+		Profiles:         bs.Profiles,
+		OrchestratorInfo: bs.OrchestratorInfo,
+		OrchestratorOS:   bs.OrchestratorOS,
+		BroadcasterOS:    bs.BroadcasterOS,
+		Sender:           bs.Sender,
+		PMSessionID:      bs.PMSessionID,
+		tempSession:      true,
+	}
 }
 
 type lphttp struct {
