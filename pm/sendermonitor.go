@@ -80,8 +80,7 @@ type senderMonitor struct {
 	// each of currently active remote senders
 	redeemable chan *SignedTicket
 
-	// gasPriceUpdate is a channel used to receive notifications
-	// of gas price changes
+	// gasPriceUpdate receives notifications of gas price changes
 	gasPriceUpdate chan struct{}
 
 	quit chan struct{}
