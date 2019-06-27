@@ -20,18 +20,17 @@ type GasPriceOracle interface {
 // GasPriceMonitor polls for gas price updates and updates its
 // own view of the current gas price that can be used by others
 type GasPriceMonitor struct {
-	gpo             GasPriceOracle
+	gpo GasPriceOracle
+	// The following fields should be protected by `pollingMu`
 	polling         bool
 	pollingInterval time.Duration
 	cancel          context.CancelFunc
-	// pollingMu is a mutex that protects access to polling related
-	// fields
+	// pollingMu protects access to polling related fields
 	pollingMu sync.Mutex
 
-	// gasPriceMu is a mutex that protects access to gasPrice
+	// gasPriceMu protects access to gasPrice
 	gasPriceMu sync.RWMutex
-	// gasPrice is the current gas price to be returned
-	// to users
+	// gasPrice is the current gas price to be returned to users
 	gasPrice *big.Int
 
 	// update is a channel used to send notifications to a listener
