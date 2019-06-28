@@ -8,10 +8,12 @@ import (
 	"strings"
 	"time"
 
+	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/livepeer/go-livepeer/common"
 	"github.com/livepeer/go-livepeer/core"
 	lpTypes "github.com/livepeer/go-livepeer/eth/types"
 	"github.com/livepeer/go-livepeer/net"
+	"github.com/livepeer/go-livepeer/pm"
 	"github.com/livepeer/go-livepeer/server"
 
 	"github.com/golang/glog"
@@ -75,6 +77,22 @@ func (dbo *DBOrchestratorPoolCache) GetOrchestrators(numOrchestrators int) ([]*n
 	}
 
 	pred := func(info *net.OrchestratorInfo) bool {
+		protoParams := info.TicketParams
+
+		if protoParams != nil {
+			params := pm.TicketParams{
+				Recipient:         ethcommon.BytesToAddress(protoParams.Recipient),
+				FaceValue:         new(big.Int).SetBytes(protoParams.FaceValue),
+				WinProb:           new(big.Int).SetBytes(protoParams.WinProb),
+				RecipientRandHash: ethcommon.BytesToHash(protoParams.RecipientRandHash),
+				Seed:              new(big.Int).SetBytes(protoParams.Seed),
+			}
+
+			if err := dbo.node.Sender.ValidateTicketParams(&params); err != nil {
+				return false
+			}
+		}
+
 		price := server.BroadcastCfg.MaxPrice()
 		if price != nil {
 			return big.NewRat(info.PriceInfo.PricePerUnit, info.PriceInfo.PixelsPerUnit).Cmp(price) <= 0
