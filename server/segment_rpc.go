@@ -269,6 +269,7 @@ func SubmitSegment(sess *BroadcastSession, seg *stream.HLSSegment, nonce uint64)
 	payment, err := genPayment(sess)
 	if err != nil {
 		glog.Errorf("Could not create payment: %v", err)
+		return nil, err
 	}
 
 	ti := sess.OrchestratorInfo
@@ -341,7 +342,9 @@ func SubmitSegment(sess *BroadcastSession, seg *stream.HLSSegment, nonce uint64)
 
 	// update OrchestratorInfo if necessary
 	if tr.Info != nil {
-		updateOrchestratorInfo(sess, tr.Info)
+		if err := updateOrchestratorInfo(sess, tr.Info); err != nil {
+			return nil, err
+		}
 	}
 
 	// check for errors and exit early if there's anything unusual
@@ -386,7 +389,7 @@ func SubmitSegment(sess *BroadcastSession, seg *stream.HLSSegment, nonce uint64)
 	return tdata, nil
 }
 
-func updateOrchestratorInfo(sess *BroadcastSession, oInfo *net.OrchestratorInfo) {
+func updateOrchestratorInfo(sess *BroadcastSession, oInfo *net.OrchestratorInfo) error {
 	sess.OrchestratorInfo = oInfo
 
 	if len(oInfo.Storage) > 0 {
@@ -394,7 +397,7 @@ func updateOrchestratorInfo(sess *BroadcastSession, oInfo *net.OrchestratorInfo)
 	}
 
 	if oInfo.TicketParams == nil {
-		return
+		return nil
 	}
 
 	if sess.Sender != nil {
@@ -407,8 +410,14 @@ func updateOrchestratorInfo(sess *BroadcastSession, oInfo *net.OrchestratorInfo)
 			Seed:              new(big.Int).SetBytes(protoParams.Seed),
 		}
 
+		if err := sess.Sender.ValidateTicketParams(&params); err != nil {
+			return err
+		}
+
 		sess.PMSessionID = sess.Sender.StartSession(params)
 	}
+
+	return nil
 }
 
 func genSegCreds(sess *BroadcastSession, seg *stream.HLSSegment) (string, error) {
